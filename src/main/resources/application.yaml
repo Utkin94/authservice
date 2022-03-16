@@ -1,5 +1,0 @@
-spring:
-  liquibase:
-    change-log: db/changelog/changeLog.xml
-  datasource:
-    driverClassName: org.postgresql.Driver

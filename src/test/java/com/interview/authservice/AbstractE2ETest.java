@@ -8,6 +8,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -23,6 +25,20 @@ public abstract class AbstractE2ETest {
 
     @Autowired
     protected ObjectMapper objectMapper;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
+    protected <T> T executeWithTransaction(TransactionCallback<T> objectTransactionCallback) {
+        return transactionTemplate.execute(objectTransactionCallback);
+    }
+
+    protected void executeWithTransaction(Runnable task) {
+        executeWithTransaction(t -> {
+            task.run();
+            return t;
+        });
+    }
 
     @Container
     public static PostgreSQLContainer<?> postgresDB = new PostgreSQLContainer<>("postgres:13.2")

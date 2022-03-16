@@ -9,6 +9,7 @@ import com.interview.authservice.repository.RoleRepository;
 import com.interview.authservice.repository.UserRepository;
 import com.interview.authservice.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     @Override
@@ -30,7 +32,7 @@ public class UserServiceImpl implements UserService {
         userToSave.setUsername(userDtoToCreate.getUsername());
         userToSave.setFirstName(userDtoToCreate.getFirstName());
         userToSave.setLastName(userDtoToCreate.getLastName());
-        userToSave.setPassword(new String(userDtoToCreate.getPassword()));
+        userToSave.setPassword(passwordEncoder.encode(userDtoToCreate.getPassword()));
         userToSave.setRoles(Set.of(new UserRole()
                 .setId(new UserRoleId(userToSave.getId(), defaultRole.getId()))
                 .setUser(userToSave)
