@@ -1,5 +1,6 @@
 package com.interview.authservice;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,6 +20,9 @@ public abstract class AbstractE2ETest {
 
     @Autowired
     protected MockMvc mockMvc;
+
+    @Autowired
+    protected ObjectMapper objectMapper;
 
     @Container
     public static PostgreSQLContainer<?> postgresDB = new PostgreSQLContainer<>("postgres:13.2")
