@@ -2,10 +2,13 @@ package com.interview.authservice.inboun.http;
 
 import com.interview.authservice.inboun.http.model.UserCreationRequest;
 import com.interview.authservice.inboun.http.model.UserDto;
+import com.interview.authservice.inboun.http.model.UserUpdateRequest;
 import com.interview.authservice.mapper.UserMapper;
 import com.interview.authservice.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,5 +25,11 @@ public class UserController {
     public UserDto createUser(@RequestBody UserCreationRequest request) {
         var createdUser = userService.createUser(request);
         return userMapper.mapUserEntityToDto(createdUser);
+    }
+
+    @PutMapping("/{userId}")
+    public UserDto updateUser(@RequestBody UserUpdateRequest request, @PathVariable(name = "userId") Long userId) {
+        var user = userService.updateUser(userId, request);
+        return userMapper.mapUserEntityToDto(user);
     }
 }

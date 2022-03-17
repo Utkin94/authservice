@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 @SpringBootApplication
 @EnableConfigurationProperties
 @ConfigurationPropertiesScan("com.interview.authservice.configuration")
+//todo validation
 public class AuthServiceApplication {
 
     public static void main(String[] args) {

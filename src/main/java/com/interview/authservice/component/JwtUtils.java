@@ -3,6 +3,7 @@ package com.interview.authservice.component;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.interview.authservice.configuration.properties.AppProperties;
 import com.interview.authservice.configuration.properties.JwtConfig;
@@ -45,6 +46,22 @@ public class JwtUtils {
                 .sign(algorithm);
     }
 
+    public DecodedJWT decodeToken(String accessToken) {
+        return JWT.decode(accessToken);
+    }
+
+    public boolean isTokenValid(String token) {
+        try {
+            JWT.require(algorithm)
+                    .build()
+                    .verify(token);
+        } catch (JWTVerificationException e) {
+            return false;
+        }
+
+        return true;
+    }
+
     private JWTCreator.Builder createBuilderWithTimes(long offset) {
         var currentTimeMillis = System.currentTimeMillis();
         var currentTimePlusOffset = currentTimeMillis + offset;
@@ -52,9 +69,5 @@ public class JwtUtils {
         return JWT.create()
                 .withIssuedAt(new Date(currentTimeMillis))
                 .withExpiresAt(new Date(currentTimePlusOffset));
-    }
-
-    public DecodedJWT decodeToken(String accessToken) {
-        return JWT.decode(accessToken);
     }
 }

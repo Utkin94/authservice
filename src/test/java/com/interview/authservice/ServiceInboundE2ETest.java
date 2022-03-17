@@ -9,13 +9,17 @@ import com.interview.authservice.entity.User;
 import com.interview.authservice.entity.UserRole;
 import com.interview.authservice.entity.UserRoleId;
 import com.interview.authservice.inboun.http.model.UserCreationRequest;
+import com.interview.authservice.inboun.http.model.UserUpdateRequest;
 import com.interview.authservice.repository.RoleRepository;
 import com.interview.authservice.repository.UserRepository;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -27,6 +31,7 @@ import static com.interview.authservice.component.JwtUtils.CLAIM_ALIAS_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -77,7 +82,7 @@ public class ServiceInboundE2ETest extends AbstractE2ETest {
     }
 
     @Test
-    public void postUser_newUserShouldBeCreated() throws Exception {
+    public void postUsers_newUserShouldBeCreated() throws Exception {
         var roleUser = roleRepository.findAll().stream().filter(r -> r.getRoleKey().equals("ROLE_USER")).findFirst().orElseThrow();
 
         var password = "password";
@@ -135,6 +140,92 @@ public class ServiceInboundE2ETest extends AbstractE2ETest {
                 .matches(token -> rolesToStrings(admin.getRoles()).equals(token.getClaim(CLAIM_ALIAS_ROLES).asList(String.class)));
     }
 
+    @SneakyThrows
+    @Test
+    public void putUsers_userShouldBeAbleToUpdateOwnData() {
+        var user = userRepository.findByUsername("user").orElseThrow();
+
+        var newFirstName = "newFirstName";
+        var request = new UserUpdateRequest();
+        request.setNewFirstName(newFirstName);
+
+        //perform request
+        mockMvc.perform(put("/api/users/{userId}", user.getId())
+                        .content(objectMapper.writeValueAsString(request))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, createUserToken(user)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", notNullValue()))
+                .andExpect(jsonPath("$.username").value(user.getUsername()))
+                .andExpect(jsonPath("$.firstName").value(newFirstName))
+                .andExpect(jsonPath("$.lastName").value(user.getLastName()));
+
+        assertThat(userRepository.findByUsername("user").orElseThrow())
+                .matches(u -> u.getUsername().equals(user.getUsername()))
+                .matches(u -> u.getLastName().equals(user.getLastName()))
+                .matches(u -> u.getFirstName().equals(newFirstName));
+    }
+
+    @SneakyThrows
+    @Test
+    public void putUsers_adminShouldBeAbleToUpdateAnotherUsersData() {
+        var user = userRepository.findByUsername("user").orElseThrow();
+        var admin = userRepository.findByUsername("admin").orElseThrow();
+
+        var newFirstName = "newFirstName";
+        var request = new UserUpdateRequest();
+        request.setNewFirstName(newFirstName);
+
+        //perform request
+        mockMvc.perform(put("/api/users/{userId}", user.getId())
+                        .content(objectMapper.writeValueAsString(request))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, createUserToken(admin)))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        assertThat(userRepository.findByUsername("user").orElseThrow())
+                .matches(u -> u.getUsername().equals(user.getUsername()))
+                .matches(u -> u.getLastName().equals(user.getLastName()))
+                .matches(u -> u.getFirstName().equals(newFirstName));
+    }
+
+    @SneakyThrows
+    @Test
+    public void putUsers_notAuthenticatedUserShouldNotBeAbleToUpdateData() {
+        var newFirstName = "newFirstName";
+        var request = new UserUpdateRequest();
+        request.setNewFirstName(newFirstName);
+
+        //perform request
+        mockMvc.perform(put("/api/users/{userId}", 1L)
+                        .content(objectMapper.writeValueAsString(request))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isUnauthorized());
+    }
+
+    @SneakyThrows
+    @Test
+    public void putUsers_userShouldNotBeAbleToUpdateDataOfAnotherUser() {
+        var user = userRepository.findByUsername("user").orElseThrow();
+        var admin = userRepository.findByUsername("admin").orElseThrow();
+
+        var newFirstName = "newFirstName";
+        var request = new UserUpdateRequest();
+        request.setNewFirstName(newFirstName);
+
+        //perform request
+        mockMvc.perform(put("/api/users/{userId}", admin.getId())
+                        .content(objectMapper.writeValueAsString(request))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, createUserToken(user)))
+                .andDo(print())
+                .andExpect(status().isForbidden());
+    }
+
     private User createUserWithRole(User userToCreate, Role role) {
         userToCreate.setPassword(passwordEncoder.encode(userToCreate.getUsername()));
         userToCreate.setRoles(
@@ -153,5 +244,15 @@ public class ServiceInboundE2ETest extends AbstractE2ETest {
                 .map(UserRole::getRole)
                 .map(Role::getRoleKey)
                 .collect(Collectors.toList());
+    }
+
+    private String createUserToken(User user) {
+        return "Bearer " + jwtUtils.createAccessToken(
+                user.getId().toString(),
+                user.getUsername(),
+                user.getRoles().stream()
+                        .map(r -> new SimpleGrantedAuthority(r.getRole().getRoleKey()))
+                        .collect(Collectors.toList())
+        );
     }
 }

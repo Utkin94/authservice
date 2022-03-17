@@ -5,6 +5,7 @@ import com.interview.authservice.entity.User;
 import com.interview.authservice.entity.UserRole;
 import com.interview.authservice.entity.UserRoleId;
 import com.interview.authservice.inboun.http.model.UserCreationRequest;
+import com.interview.authservice.inboun.http.model.UserUpdateRequest;
 import com.interview.authservice.repository.RoleRepository;
 import com.interview.authservice.repository.UserRepository;
 import com.interview.authservice.service.UserService;
@@ -40,6 +41,22 @@ public class UserServiceImpl implements UserService {
         ));
 
         return userRepository.save(userToSave);
+    }
+
+    @Transactional
+    @Override
+    public User updateUser(Long userId, UserUpdateRequest request) {
+        var user = userRepository.findById(userId).orElseThrow();
+
+        //only two fields for simplicity
+        if (request.getNewFirstName() != null) {
+            user.setFirstName(request.getNewFirstName());
+        }
+        if (request.getNewLastName() != null) {
+            user.setLastName(request.getNewLastName());
+        }
+
+        return userRepository.save(user);
     }
 
     private Role getDefaultRole() {
