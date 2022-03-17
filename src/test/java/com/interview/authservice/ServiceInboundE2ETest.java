@@ -23,6 +23,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,6 +31,8 @@ import static com.interview.authservice.component.JwtUtils.CLAIM_ALIAS_ROLES;
 import static com.interview.authservice.component.JwtUtils.CLAIM_ALIAS_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -80,6 +83,61 @@ public class ServiceInboundE2ETest extends AbstractE2ETest {
     public void afterEach() {
         executeWithTransaction(() -> userRepository.deleteAll());
     }
+
+    @SneakyThrows
+    @Test
+    public void deleteUser_userShouldBeAbleToRemovedHimself() {
+        var user = userRepository.findByUsername("user").orElseThrow();
+
+        //perform request
+        mockMvc.perform(delete("/api/users/{userId}", user.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, createUserToken(user)))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        assertThrows(NoSuchElementException.class, () -> userRepository.findByUsername("user").orElseThrow());
+    }
+
+    @SneakyThrows
+    @Test
+    public void deleteUser_adminShouldBeAbleToRemoveAnotherUser() {
+        var user = userRepository.findByUsername("user").orElseThrow();
+        var admin = userRepository.findByUsername("admin").orElseThrow();
+
+        //perform request
+        mockMvc.perform(delete("/api/users/{userId}", user.getId())
+                        .header(HttpHeaders.AUTHORIZATION, createUserToken(admin)))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        assertThrows(NoSuchElementException.class, () -> userRepository.findByUsername("user").orElseThrow());
+    }
+
+    @SneakyThrows
+    @Test
+    public void deleteUser_unauthorizedUserShouldNotBeAbleToRemoveUsers() {
+        var user = userRepository.findByUsername("user").orElseThrow();
+
+        //perform request
+        mockMvc.perform(delete("/api/users/{userId}", user.getId()))
+                .andDo(print())
+                .andExpect(status().isUnauthorized());
+    }
+
+    @SneakyThrows
+    @Test
+    public void deleteUser_userShouldNotBeAbleToRemoveAnotherUser() {
+        var user = userRepository.findByUsername("user").orElseThrow();
+        var admin = userRepository.findByUsername("admin").orElseThrow();
+
+        //perform request
+        mockMvc.perform(delete("/api/users/{userId}", admin.getId())
+                        .header(HttpHeaders.AUTHORIZATION, createUserToken(user)))
+                .andDo(print())
+                .andExpect(status().isForbidden());
+    }
+
 
     @Test
     public void postUsers_newUserShouldBeCreated() throws Exception {

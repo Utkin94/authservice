@@ -59,6 +59,12 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
+    @Transactional
+    @Override
+    public void removeUser(Long userId) {
+        userRepository.deleteById(userId);
+    }
+
     private Role getDefaultRole() {
         return roleRepository.findAll()
                 .stream()
