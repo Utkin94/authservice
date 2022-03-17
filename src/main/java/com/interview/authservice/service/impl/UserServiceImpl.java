@@ -65,6 +65,11 @@ public class UserServiceImpl implements UserService {
         userRepository.deleteById(userId);
     }
 
+    @Override
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username).orElseThrow();
+    }
+
     private Role getDefaultRole() {
         return roleRepository.findAll()
                 .stream()

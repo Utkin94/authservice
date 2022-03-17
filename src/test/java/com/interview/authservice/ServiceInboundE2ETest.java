@@ -1,8 +1,8 @@
 package com.interview.authservice;
 
 import com.interview.authservice.component.JwtUtils;
-import com.interview.authservice.configuration.model.LoginRequest;
-import com.interview.authservice.configuration.model.LoginResponse;
+import com.interview.authservice.inboun.http.model.LoginRequest;
+import com.interview.authservice.inboun.http.model.LoginResponse;
 import com.interview.authservice.configuration.properties.AppProperties;
 import com.interview.authservice.entity.Role;
 import com.interview.authservice.entity.User;
@@ -182,7 +182,7 @@ public class ServiceInboundE2ETest extends AbstractE2ETest {
                 .setUsername(admin.getUsername())
                 .setPassword(admin.getUsername());
 
-        var result = mockMvc.perform(post("/login")
+        var result = mockMvc.perform(post("/api/auth/login")
                         .content(objectMapper.writeValueAsString(loginRequest))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())

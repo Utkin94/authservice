@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
@@ -17,19 +18,20 @@ import static com.interview.authservice.component.JwtUtils.CLAIM_ALIAS_ROLES;
 import static com.interview.authservice.utils.AppUtils.stringsToAuthorities;
 
 
+@Component
 @RequiredArgsConstructor
 @Slf4j
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
-    private final String loginPath;
+    private static final String LOGIN_PATH = "api/auth/login";
 
     @SneakyThrows
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response, FilterChain filterChain) {
         var authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (!request.getServletPath().equals(loginPath)
+        if (!request.getServletPath().equals(LOGIN_PATH)
                 && authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             tryToSetAuthentication(authorizationHeader);
         }

@@ -1,4 +1,4 @@
-package com.interview.authservice.configuration.model;
+package com.interview.authservice.inboun.http.model;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
