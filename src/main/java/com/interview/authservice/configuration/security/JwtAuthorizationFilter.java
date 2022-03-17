@@ -42,16 +42,16 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     private void tryToSetAuthentication(String authorizationHeader) {
         try {
             var token = authorizationHeader.substring(7);
-            if (jwtUtils.isTokenValid(token)) {
-                var decodedJWT = jwtUtils.decodeToken(token);
-                var roles = decodedJWT.getClaim(CLAIM_ALIAS_ROLES).asList(String.class);
+            jwtUtils.validateToken(token);
 
-                var authenticationToken = new UsernamePasswordAuthenticationToken(
-                        decodedJWT.getSubject(), null, stringsToAuthorities(roles));
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-            }
+            var decodedJWT = jwtUtils.decodeToken(token);
+            var roles = decodedJWT.getClaim(CLAIM_ALIAS_ROLES).asList(String.class);
+
+            var authenticationToken = new UsernamePasswordAuthenticationToken(
+                    decodedJWT.getSubject(), null, stringsToAuthorities(roles));
+            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
         } catch (Exception e) {
-            log.error("Error on jwt token validation: ", e);
+            log.error("Error on jwt token parsing: ", e);
         }
     }
 }

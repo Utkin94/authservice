@@ -319,6 +319,23 @@ public class ServiceInboundE2ETest extends AbstractE2ETest {
                 .matches(token -> user.getId().toString().equals(token.getSubject()));
     }
 
+    @SneakyThrows
+    @Test
+    public void postRefreshWithInvalidTokenTest() {
+        var refreshRequest = new TokenRefreshRequest();
+        var invalidToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" +
+                ".eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ" +
+                ".SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+
+        refreshRequest.setRefreshToken(invalidToken);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .content(objectMapper.writeValueAsString(refreshRequest))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
     private User createUserWithRole(User userToCreate, Role role) {
         userToCreate.setPassword(passwordEncoder.encode(userToCreate.getUsername()));
         userToCreate.setRoles(

@@ -44,19 +44,14 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public JwtTokenPairDto refresh(TokenRefreshRequest refreshRequest) {
-        //todo test not happy paths
         var oldRefreshToken = refreshRequest.getRefreshToken();
 
-        //todo very bad because, we need to throw underline exception upstairs
-        if (!jwtUtils.isTokenValid(oldRefreshToken)) {
-            throw new BadCredentialsException("Invalid token");
-        }
+        jwtUtils.validateToken(oldRefreshToken);
 
         var decodedToken = jwtUtils.decodeToken(oldRefreshToken);
         var user = userService.getUserByUsername(decodedToken.getClaim(CLAIM_ALIAS_USERNAME).asString());
 
-        JwtTokenPairDto tokenPairByUser = createTokenPairByUser(user);
-        return tokenPairByUser;
+        return createTokenPairByUser(user);
     }
 
     @NotNull

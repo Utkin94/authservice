@@ -3,7 +3,6 @@ package com.interview.authservice.component;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.interview.authservice.configuration.properties.AppProperties;
 import com.interview.authservice.configuration.properties.JwtConfig;
@@ -50,16 +49,10 @@ public class JwtUtils {
         return JWT.decode(accessToken);
     }
 
-    public boolean isTokenValid(String token) {
-        try {
-            JWT.require(algorithm)
-                    .build()
-                    .verify(token);
-        } catch (JWTVerificationException e) {
-            return false;
-        }
-
-        return true;
+    public void validateToken(String token) {
+        JWT.require(algorithm)
+                .build()
+                .verify(token);
     }
 
     private JWTCreator.Builder createBuilderWithTimes(long offset) {

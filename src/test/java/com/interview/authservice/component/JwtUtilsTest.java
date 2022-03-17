@@ -1,6 +1,8 @@
 package com.interview.authservice.component;
 
 
+import com.auth0.jwt.exceptions.SignatureVerificationException;
+import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.interview.authservice.configuration.properties.AppProperties;
 import com.interview.authservice.configuration.properties.JwtConfig;
 import lombok.SneakyThrows;
@@ -9,8 +11,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JwtUtilsTest {
 
@@ -27,7 +29,7 @@ class JwtUtilsTest {
         JwtUtils jwtUtils = new JwtUtils(appProperties);
 
         String accessToken = jwtUtils.createAccessToken("1", "username", List.of(new SimpleGrantedAuthority("role")));
-        assertTrue(jwtUtils.isTokenValid(accessToken));
+        assertDoesNotThrow(() -> jwtUtils.validateToken(accessToken));
     }
 
     @Test
@@ -47,7 +49,7 @@ class JwtUtilsTest {
 
         String accessToken = fakeJwtUtils.createAccessToken("1", "username", List.of(new SimpleGrantedAuthority("role")));
 
-        assertFalse(jwtUtils.isTokenValid(accessToken));
+        assertThrows(SignatureVerificationException.class, () -> jwtUtils.validateToken(accessToken));
     }
 
     @SneakyThrows
@@ -68,7 +70,7 @@ class JwtUtilsTest {
         //todo sorry for this
         Thread.sleep(1000L);
 
-        assertFalse(jwtUtils.isTokenValid(accessToken));
+        assertThrows(TokenExpiredException.class, () -> jwtUtils.validateToken(accessToken));
     }
 
 }

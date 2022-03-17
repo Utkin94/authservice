@@ -7,7 +7,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 @SpringBootApplication(exclude = {UserDetailsServiceAutoConfiguration.class})
 @EnableConfigurationProperties
-//todo validation
 public class AuthServiceApplication {
 
     public static void main(String[] args) {
