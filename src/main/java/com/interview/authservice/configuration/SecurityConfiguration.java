@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -19,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private final JwtAuthorizationFilter jwtAuthorizationFilter;
@@ -28,15 +30,10 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
         http.csrf().disable();
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
-        //todo refactor: move access spells to methods
         http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/auth/**").permitAll();
         http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/users").permitAll();
-        http.authorizeRequests().antMatchers(HttpMethod.PUT, "/api/users/{userId}")
-                .access("hasAuthority('ROLE_ADMIN') or authentication.principal.equals(#userId)");
-        http.authorizeRequests().antMatchers(HttpMethod.DELETE, "/api/users/{userId}")
-                .access("hasAuthority('ROLE_ADMIN') or authentication.principal.equals(#userId)");
-
         http.authorizeRequests().anyRequest().authenticated();
+
         http.exceptionHandling().authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED));
 
         http.addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class);

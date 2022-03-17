@@ -6,6 +6,7 @@ import com.interview.authservice.inboun.http.model.UserUpdateRequest;
 import com.interview.authservice.mapper.UserMapper;
 import com.interview.authservice.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,13 +30,15 @@ public class UserController {
     }
 
     @PutMapping("/{userId}")
-    public UserDto updateUser(@RequestBody UserUpdateRequest request, @PathVariable(name = "userId") Long userId) {
+    @PreAuthorize("hasAuthority('ROLE_ADMIN') or authentication.principal.equals(#userId.toString())")
+    public UserDto updateUser(@RequestBody UserUpdateRequest request, @PathVariable Long userId) {
         var user = userService.updateUser(userId, request);
         return userMapper.mapUserEntityToDto(user);
     }
 
     @DeleteMapping("/{userId}")
-    public void deleteUser(@PathVariable(name = "userId") Long userId) {
+    @PreAuthorize("hasAuthority('ROLE_ADMIN') or authentication.principal.equals(#userId.toString())")
+    public void deleteUser(@PathVariable Long userId) {
         userService.removeUser(userId);
     }
 }
