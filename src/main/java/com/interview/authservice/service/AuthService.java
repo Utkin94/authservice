@@ -1,8 +1,11 @@
 package com.interview.authservice.service;
 
+import com.interview.authservice.inboun.http.model.JwtTokenPairDto;
 import com.interview.authservice.inboun.http.model.LoginRequest;
-import com.interview.authservice.inboun.http.model.LoginResponse;
+import com.interview.authservice.inboun.http.model.TokenRefreshRequest;
 
 public interface AuthService {
-    LoginResponse login(LoginRequest loginRequest);
+    JwtTokenPairDto login(LoginRequest loginRequest);
+
+    JwtTokenPairDto refresh(TokenRefreshRequest refreshRequest);
 }

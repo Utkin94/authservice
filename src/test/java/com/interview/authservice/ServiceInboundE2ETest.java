@@ -1,13 +1,14 @@
 package com.interview.authservice;
 
 import com.interview.authservice.component.JwtUtils;
-import com.interview.authservice.inboun.http.model.LoginRequest;
-import com.interview.authservice.inboun.http.model.LoginResponse;
 import com.interview.authservice.configuration.properties.AppProperties;
 import com.interview.authservice.entity.Role;
 import com.interview.authservice.entity.User;
 import com.interview.authservice.entity.UserRole;
 import com.interview.authservice.entity.UserRoleId;
+import com.interview.authservice.inboun.http.model.JwtTokenPairDto;
+import com.interview.authservice.inboun.http.model.LoginRequest;
+import com.interview.authservice.inboun.http.model.TokenRefreshRequest;
 import com.interview.authservice.inboun.http.model.UserCreationRequest;
 import com.interview.authservice.inboun.http.model.UserUpdateRequest;
 import com.interview.authservice.repository.RoleRepository;
@@ -190,12 +191,16 @@ public class ServiceInboundE2ETest extends AbstractE2ETest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andReturn();
 
-        var response = objectMapper.readValue(result.getResponse().getContentAsString(), LoginResponse.class);
+        var response = objectMapper.readValue(result.getResponse().getContentAsString(), JwtTokenPairDto.class);
         assertThat(jwtUtils.decodeToken(response.getAccessToken()))
                 .matches(token -> token.getIssuer().equals(appProperties.getJwt().getIssuer()))
                 .matches(token -> admin.getUsername().equals(token.getClaim(CLAIM_ALIAS_USERNAME).asString()))
                 .matches(token -> admin.getId().toString().equals(token.getSubject()))
                 .matches(token -> rolesToStrings(admin.getRoles()).equals(token.getClaim(CLAIM_ALIAS_ROLES).asList(String.class)));
+        assertThat(jwtUtils.decodeToken(response.getRefreshToken()))
+                .matches(token -> token.getIssuer().equals(appProperties.getJwt().getIssuer()))
+                .matches(token -> admin.getUsername().equals(token.getClaim(CLAIM_ALIAS_USERNAME).asString()))
+                .matches(token -> admin.getId().toString().equals(token.getSubject()));
     }
 
     @SneakyThrows
@@ -282,6 +287,36 @@ public class ServiceInboundE2ETest extends AbstractE2ETest {
                         .header(HttpHeaders.AUTHORIZATION, createUserToken(user)))
                 .andDo(print())
                 .andExpect(status().isForbidden());
+    }
+
+    @SneakyThrows
+    @Test
+    public void postRefresh_refreshedPairOfTokensShouldBeReturned() {
+        var user = userRepository.findByUsername("user").orElseThrow();
+
+        var refreshRequest = new TokenRefreshRequest();
+        refreshRequest.setRefreshToken(jwtUtils.createRefreshToken(user.getId().toString(), user.getUsername()));
+
+        var result = mockMvc.perform(post("/api/auth/refresh")
+                        .content(objectMapper.writeValueAsString(refreshRequest))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        var response = objectMapper.readValue(result.getResponse().getContentAsString(), JwtTokenPairDto.class);
+
+        assertThat(jwtUtils.decodeToken(response.getAccessToken()))
+                .matches(token -> token.getIssuer().equals(appProperties.getJwt().getIssuer()))
+                .matches(token -> user.getUsername().equals(token.getClaim(CLAIM_ALIAS_USERNAME).asString()))
+                .matches(token -> user.getId().toString().equals(token.getSubject()))
+                .matches(token -> rolesToStrings(user.getRoles()).equals(token.getClaim(CLAIM_ALIAS_ROLES).asList(String.class)));
+
+        assertThat(jwtUtils.decodeToken(response.getRefreshToken()))
+                .matches(token -> token.getIssuer().equals(appProperties.getJwt().getIssuer()))
+                .matches(token -> user.getUsername().equals(token.getClaim(CLAIM_ALIAS_USERNAME).asString()))
+                .matches(token -> user.getId().toString().equals(token.getSubject()));
     }
 
     private User createUserWithRole(User userToCreate, Role role) {

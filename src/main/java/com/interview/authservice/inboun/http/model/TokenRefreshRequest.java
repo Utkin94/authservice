@@ -3,7 +3,6 @@ package com.interview.authservice.inboun.http.model;
 import lombok.Data;
 
 @Data
-public class LoginResponse {
-    private String accessToken;
+public class TokenRefreshRequest {
     private String refreshToken;
 }
